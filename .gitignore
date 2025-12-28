@@ -1,2 +1,5 @@
 env/
 datafolder/
+indexer/utils/__pycache__/
+agent/utils/__pycache__/
+agent/.env

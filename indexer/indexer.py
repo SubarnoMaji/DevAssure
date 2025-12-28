@@ -186,18 +186,8 @@ def main():
     logging.info(f"Current documents in collection: {doc_count}")
 
     try:
-        last_display_time = time.time()
-        display_interval = 10  # Display count every 10 seconds when idle
-        
         while True:
             time.sleep(1)
-            
-            # Display document count periodically when idle
-            current_time = time.time()
-            if current_time - last_display_time >= display_interval:
-                doc_count = store.get_number_of_documents()
-                logging.info(f"Idle state - Documents in collection: {doc_count}")
-                last_display_time = current_time
                 
     except KeyboardInterrupt:
         logging.info("Stopping file watcher...")

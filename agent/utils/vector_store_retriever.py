@@ -1,8 +1,8 @@
 import chromadb
 import logging
-
 import sys
 import os
+
 # Add project root to path to import from indexer
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if project_root not in sys.path:
@@ -10,14 +10,38 @@ if project_root not in sys.path:
 from indexer.utils.vector_store_config import COLLECTION_NAME, EMBEDDING_MODEL
 from indexer.utils.embeddor import QwenEmbeddor
 
-client = chromadb.HttpClient(host='localhost', port=8000)
-ef = QwenEmbeddor(model_name=EMBEDDING_MODEL)
+class VectorStoreRetriever:
+    def __init__( 
+        self,
+        host: str = "localhost",
+        port: int = 8000,
+        collection_name: str = COLLECTION_NAME,
+        embedding_model: str = EMBEDDING_MODEL
+    ):
+        self.client = chromadb.HttpClient(host=host, port=port)
+        self.embeddor = QwenEmbeddor(model_name=embedding_model)
+        self.collection = self.client.get_or_create_collection(
+            name=collection_name,
+            embedding_function=self.embeddor
+        )
+    
+    def query(self, query_texts, n_results=4, **kwargs):
+        return self.collection.query(
+            query_texts=query_texts,
+            n_results=n_results,
+            **kwargs
+        )
 
-collection = client.get_or_create_collection(name=COLLECTION_NAME, embedding_function=ef)
+    def __call__(self, query_texts, n_results=4, **kwargs):
+        """
+        Make instances directly callable for querying.
+        Example: retriever(["text"], n_results=3)
+        """
+        return self.query(query_texts, n_results, **kwargs)
 
 
-results = collection.query(
-    query_texts=["what invoice is this?"],
-    n_results=4
-)
-print(results)
+if __name__ == "__main__":
+    retriever = VectorStoreRetriever()
+    results = retriever(["what invoice is this?"], n_results=4)
+    print(results)
+
