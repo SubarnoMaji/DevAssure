@@ -17,7 +17,7 @@ collection = client.get_or_create_collection(name=COLLECTION_NAME, embedding_fun
 
 
 results = collection.query(
-    query_texts=["This is a query document about hawaii"],
-    n_results=2 
+    query_texts=["what invoice is this?"],
+    n_results=4
 )
 print(results)

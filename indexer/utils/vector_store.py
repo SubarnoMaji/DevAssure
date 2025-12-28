@@ -42,19 +42,11 @@ class ChromaVectorStore:
             where={"source": source_file}
         )
         return results.get("ids", [])
+    
+    def get_number_of_documents(self):
+        """Get the number of documents in the collection."""
+        return self.collection.count()
 
     def get_collection(self):
         return self.collection
 
-if __name__ == "__main__":
-    store = ChromaVectorStore()
-    sample_ids = ["id1", "id2"]
-    sample_documents = [
-        "This is a document about pineapple",
-        "This is a document about oranges"
-    ]
-    sample_metadatas = [
-        {"fruit": "pineapple", "category": "tropical"},
-        {"fruit": "orange", "category": "citrus"}
-    ]
-    store.add_documents(sample_ids, sample_documents, sample_metadatas)

@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Optional
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from parser import (
+from .parser import (
     TextParser,
     PDFParser,
     DocxParser,
