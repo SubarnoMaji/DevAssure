@@ -15,8 +15,8 @@ SUPPORTED_EXTENSIONS = {"txt", "pdf", "docx", "jpg", "jpeg", "png", "bmp", "tiff
 
 _chunker = None
 
+
 def get_chunker(chunk_size=1000, chunk_overlap=200):
-    """Get or create the chunker instance."""
     global _chunker
     if _chunker is None:
         _chunker = FileChunker(
@@ -28,28 +28,23 @@ def get_chunker(chunk_size=1000, chunk_overlap=200):
 
 
 def generate_doc_id(file_path, index):
-    """Generate a unique document ID based on file path and chunk index."""
     file_hash = hashlib.md5(file_path.encode()).hexdigest()[:8]
     return f"{os.path.basename(file_path)}_{file_hash}_{index}"
 
 
 def is_supported_file(file_path):
-    """Check if file has a supported extension."""
     ext = file_path.lower().split('.')[-1]
     return ext in SUPPORTED_EXTENSIONS and not os.path.basename(file_path).startswith(".")
 
 
 def index_file(file_path, store, chunker=None):
-    """Index a single file into the vector store using chunker."""
     if not is_supported_file(file_path):
         return 0
 
     try:
-        # Use provided chunker or get default one
         if chunker is None:
             chunker = get_chunker()
-        
-        # Parse and chunk the file
+
         file_path_obj = Path(file_path)
         chunked_docs = chunker.parse_file(file_path_obj)
 
@@ -57,15 +52,13 @@ def index_file(file_path, store, chunker=None):
             logging.warning(f"No content extracted from {file_path}")
             return 0
 
-        # Extract contents, generate IDs, and prepare metadatas
         contents = [doc['content'] for doc in chunked_docs]
         ids = [generate_doc_id(file_path, i) for i in range(len(chunked_docs))]
 
-        # Add source file path to metadata for tracking (chunker already provides chunk_size, filename, type)
         metadatas = []
         for doc in chunked_docs:
             meta = doc.get('metadata', {}).copy()
-            meta['source'] = file_path  # Add source path for tracking/deletion
+            meta['source'] = file_path
             metadatas.append(meta)
 
         store.add_documents(ids, contents, metadatas)
@@ -78,7 +71,6 @@ def index_file(file_path, store, chunker=None):
 
 
 def remove_file_from_index(file_path, store):
-    """Remove all documents associated with a file from the vector store."""
     try:
         doc_ids = store.get_documents_by_source(file_path)
         if doc_ids:
@@ -92,7 +84,6 @@ def remove_file_from_index(file_path, store):
 
 
 class FileWatchHandler(FileSystemEventHandler):
-    """Handler for file system events."""
 
     def __init__(self, store, chunker=None):
         self.store = store
@@ -104,7 +95,6 @@ class FileWatchHandler(FileSystemEventHandler):
             return
         file_path = event.src_path
         if is_supported_file(file_path):
-            # Small delay to ensure file is fully written
             time.sleep(0.5)
             logging.info(f"New file detected: {os.path.basename(file_path)}")
             index_file(file_path, self.store, self.chunker)
@@ -126,10 +116,8 @@ class FileWatchHandler(FileSystemEventHandler):
             return
         file_path = event.src_path
         if is_supported_file(file_path):
-            # Small delay to ensure file is fully written
             time.sleep(0.5)
             logging.info(f"File modified: {os.path.basename(file_path)}")
-            # Remove old entries and re-index
             remove_file_from_index(file_path, self.store)
             index_file(file_path, self.store, self.chunker)
             doc_count = self.store.get_number_of_documents()
@@ -137,7 +125,6 @@ class FileWatchHandler(FileSystemEventHandler):
 
 
 def initial_index(source_folder, store, chunker=None):
-    """Perform initial indexing of all files in the folder."""
     if not os.path.isdir(source_folder):
         logging.error(f"The configured path {source_folder} is not a valid directory.")
         return 0
@@ -162,7 +149,7 @@ def main():
 
     logging.info(f"Initializing vector store...")
     store = ChromaVectorStore()
-    
+
     logging.info(f"Initializing chunker...")
     chunker = get_chunker(chunk_size=1000, chunk_overlap=200)
 
@@ -176,20 +163,20 @@ def main():
     observer.start()
 
     logging.info(f"Watching folder for changes: {source_folder}")
-    
+
     doc_count = store.get_number_of_documents()
     logging.info(f"Current documents in collection: {doc_count}")
 
     try:
         while True:
             time.sleep(1)
-                
+
     except KeyboardInterrupt:
         logging.info("Stopping file watcher...")
         observer.stop()
 
     observer.join()
-    
+
     final_doc_count = store.get_number_of_documents()
     logging.info(f"Final documents in collection: {final_doc_count}")
     logging.info("Indexer stopped.")

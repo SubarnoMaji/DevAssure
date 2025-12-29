@@ -1,25 +1,20 @@
 import streamlit as st
 import requests
 
-# API URLs
 UPLOAD_API_URL = "http://localhost:8001"
 AGENT_API_URL = "http://localhost:8002"
 
 st.set_page_config(
     page_title="RAG Chatbot",
-    page_icon="🤖",
     layout="wide"
 )
 
-# Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ============== SIDEBAR - File Upload ==============
 with st.sidebar:
-    st.header("📁 Document Management")
+    st.header("Document Management")
 
-    # File upload section
     st.subheader("Upload Files")
     uploaded_files = st.file_uploader(
         "Choose files to upload",
@@ -52,7 +47,6 @@ with st.sidebar:
 
     st.divider()
 
-    # List existing files
     st.subheader("Uploaded Files")
     if st.button("Refresh", use_container_width=True):
         st.rerun()
@@ -85,48 +79,38 @@ with st.sidebar:
 
     st.divider()
 
-    # Settings
     st.subheader("Settings")
     use_rag = st.checkbox("Use RAG (Document Search)", value=True)
 
     st.divider()
 
-    # Clear chat
     if st.button("Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
-# ============== MAIN AREA - Chatbot ==============
-st.title("🤖 RAG Chatbot")
+st.title("RAG bot")
 st.caption("Chat with your documents using AI")
 
-# Display chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat input
 if prompt := st.chat_input("Ask a question about your documents..."):
-    # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Get bot response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
                 if use_rag:
-                    # Use RAG query endpoint
                     response = requests.post(
                         f"{AGENT_API_URL}/query",
                         json={"query": prompt, "use_retrieval": True},
                         timeout=60
                     )
                 else:
-                    # Use simple query endpoint
                     response = requests.post(
                         f"{AGENT_API_URL}/simple-query",
                         json={"prompt": prompt},

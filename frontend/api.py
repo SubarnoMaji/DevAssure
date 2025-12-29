@@ -6,7 +6,6 @@ import shutil
 
 app = FastAPI(title="RAG File Upload API")
 
-# CORS middleware for Streamlit
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,11 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Path configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "indexer", "datafolder")
 
-# Ensure upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf", ".docx", ".csv", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
@@ -32,7 +29,6 @@ def root():
 
 @app.get("/files")
 def list_files():
-    """List all uploaded files in the datafolder."""
     if not os.path.exists(UPLOAD_FOLDER):
         return {"files": []}
     files = [f for f in os.listdir(UPLOAD_FOLDER) if not f.startswith(".")]
@@ -41,7 +37,6 @@ def list_files():
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload a file to the datafolder."""
     ext = os.path.splitext(file.filename)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
@@ -62,7 +57,6 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/upload-multiple")
 async def upload_multiple_files(files: List[UploadFile] = File(...)):
-    """Upload multiple files to the datafolder."""
     uploaded = []
     errors = []
 
@@ -87,7 +81,6 @@ async def upload_multiple_files(files: List[UploadFile] = File(...)):
 
 @app.delete("/files/{filename}")
 def delete_file(filename: str):
-    """Delete a file from the datafolder."""
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
     if not os.path.exists(file_path):

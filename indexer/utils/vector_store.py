@@ -2,6 +2,7 @@ import chromadb
 from .vector_store_config import COLLECTION_NAME, EMBEDDING_MODEL, CHROMA_DB_PATH
 from .embeddor import QwenEmbeddor
 
+
 class ChromaVectorStore:
     def __init__(
         self,
@@ -33,20 +34,16 @@ class ChromaVectorStore:
             )
 
     def delete_documents(self, ids):
-        """Delete documents by their IDs."""
         self.collection.delete(ids=ids)
 
     def get_documents_by_source(self, source_file):
-        """Get all document IDs that belong to a source file."""
         results = self.collection.get(
             where={"source": source_file}
         )
         return results.get("ids", [])
-    
+
     def get_number_of_documents(self):
-        """Get the number of documents in the collection."""
         return self.collection.count()
 
     def get_collection(self):
         return self.collection
-
