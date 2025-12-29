@@ -15,7 +15,6 @@ from bs4 import BeautifulSoup
 
 
 class BaseParser(ABC):
-    """Base class for all parsers."""
     
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)

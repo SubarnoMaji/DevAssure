@@ -72,32 +72,32 @@ async def query_endpoint(request: QueryRequest):
     """
     Process a query using the RAG agent.
     The agent will automatically decide if retrieval is needed, or you can force it.
-    
+
     Args:
         request: QueryRequest containing:
             - query: The user's question/query
             - use_retrieval: Optional flag to force retrieval (default: None, agent decides)
             - model: Optional model name (default: "gpt-5-mini")
             - temperature: Optional temperature (default: 0.7)
-    
+
     Returns:
         QueryResponse with the answer and metadata
     """
     try:
         logger.info(f"Processing query: {request.query[:100]}...")
-        
+
         # Process the query
         answer = process_query(
             query=request.query,
             use_retrieval=request.use_retrieval
         )
-        
+
         return QueryResponse(
             answer=answer,
             query=request.query,
             used_retrieval=request.use_retrieval
         )
-        
+
     except ValueError as e:
         logger.error(f"ValueError: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -111,30 +111,30 @@ async def query_endpoint(request: QueryRequest):
 async def simple_query_endpoint(request: SimpleQueryRequest):
     """
     Simple OpenAI call without RAG/tool usage.
-    
+
     Args:
         request: SimpleQueryRequest containing:
             - prompt: The user's prompt
             - model: Optional model name (default: "gpt-5-mini")
             - temperature: Optional temperature (default: 0.7)
-    
+
     Returns:
         SimpleQueryResponse with the response
     """
     try:
         logger.info(f"Processing simple query: {request.prompt[:100]}...")
-        
+
         response = simple_openai_call(
             prompt=request.prompt,
             model=request.model,
             temperature=request.temperature
         )
-        
+
         return SimpleQueryResponse(
             response=response,
             prompt=request.prompt
         )
-        
+
     except ValueError as e:
         logger.error(f"ValueError: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -162,4 +162,3 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8002)
-

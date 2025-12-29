@@ -158,13 +158,11 @@ def initial_index(source_folder, store, chunker=None):
 def main():
     source_folder = os.path.abspath(FOLDER_PATH)
 
-    # Ensure folder exists
     os.makedirs(source_folder, exist_ok=True)
 
     logging.info(f"Initializing vector store...")
     store = ChromaVectorStore()
     
-    # Initialize chunker
     logging.info(f"Initializing chunker...")
     chunker = get_chunker(chunk_size=1000, chunk_overlap=200)
 
@@ -172,16 +170,13 @@ def main():
     total_docs = initial_index(source_folder, store, chunker)
     logging.info(f"Initial indexing complete. Total documents: {total_docs}")
 
-    # Set up file watcher
     event_handler = FileWatchHandler(store, chunker)
     observer = Observer()
     observer.schedule(event_handler, source_folder, recursive=False)
     observer.start()
 
     logging.info(f"Watching folder for changes: {source_folder}")
-    logging.info("Press Ctrl+C to stop...")
     
-    # Display initial document count
     doc_count = store.get_number_of_documents()
     logging.info(f"Current documents in collection: {doc_count}")
 
@@ -195,7 +190,6 @@ def main():
 
     observer.join()
     
-    # Display final document count
     final_doc_count = store.get_number_of_documents()
     logging.info(f"Final documents in collection: {final_doc_count}")
     logging.info("Indexer stopped.")

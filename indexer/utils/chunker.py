@@ -12,7 +12,6 @@ from .parser import (
     URLParser
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -21,9 +20,6 @@ logger = logging.getLogger(__name__)
 
 
 class FileChunker:
-    """Chunks and parses files from a data folder."""
-    
-    # Supported file extensions mapped to their parsers
     PARSER_MAP = {
         '.txt': TextParser,
         '.pdf': PDFParser,
@@ -45,15 +41,6 @@ class FileChunker:
         chunk_overlap: int = 200,
         separators: Optional[List[str]] = None
     ):
-        """
-        Initialize the FileChunker.
-        
-        Args:
-            data_folder: Path to the folder containing files to parse
-            chunk_size: Maximum size of chunks (in characters)
-            chunk_overlap: Overlap between chunks (in characters)
-            separators: List of separators to use for splitting (default: RecursiveCharacterTextSplitter defaults)
-        """
         self.data_folder = Path(data_folder)
         if not self.data_folder.exists():
             logger.warning(f"Data folder '{data_folder}' does not exist. Creating it...")
@@ -62,7 +49,6 @@ class FileChunker:
         self.parsers = {}
         self._initialize_parsers()
         
-        # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -71,7 +57,6 @@ class FileChunker:
         )
     
     def _initialize_parsers(self):
-        """Initialize parser instances."""
         for ext, parser_class in self.PARSER_MAP.items():
             try:
                 self.parsers[ext] = parser_class()
@@ -80,42 +65,26 @@ class FileChunker:
                 self.parsers[ext] = None
     
     def _get_file_extension(self, file_path: Path) -> str:
-        """Get the file extension in lowercase."""
         return file_path.suffix.lower()
     
     def _get_parser(self, file_path: Path) -> Optional[object]:
-        """Get the appropriate parser for a file."""
         ext = self._get_file_extension(file_path)
         return self.parsers.get(ext)
     
     def _is_supported_file(self, file_path: Path) -> bool:
-        """Check if the file type is supported."""
         ext = self._get_file_extension(file_path)
         return ext in self.PARSER_MAP and self.parsers.get(ext) is not None
     
     def _chunk_document(self, doc: Dict[str, str], file_path: Path) -> List[Dict[str, str]]:
-        """
-        Split a document into chunks using the text splitter.
-        
-        Args:
-            doc: Document dictionary with 'content' and optional 'metadata'
-            file_path: Path to the source file
-            
-        Returns:
-            List of chunked document dictionaries
-        """
         content = doc.get('content', '')
         if not content.strip():
             return []
         
-        # Split the content into chunks
         chunks = self.text_splitter.split_text(content)
         
-        # Get file type from original metadata or determine from extension
         original_metadata = doc.get('metadata', {})
         file_type = original_metadata.get('type', self._get_file_extension(file_path).lstrip('.'))
         
-        # Create chunk documents with simplified metadata
         chunked_docs = []
         for chunk_text in chunks:
             chunk_metadata = {
@@ -132,15 +101,6 @@ class FileChunker:
         return chunked_docs
     
     def parse_file(self, file_path: Path) -> List[Dict[str, str]]:
-        """
-        Parse a single file and split it into chunks.
-        
-        Args:
-            file_path: Path to the file to parse
-            
-        Returns:
-            List of chunked document dictionaries
-        """
         if not file_path.exists():
             logger.error(f"File not found: {file_path}")
             return []
@@ -156,7 +116,6 @@ class FileChunker:
             documents = parser.parse(str(file_path))
             logger.info(f"Successfully parsed {len(documents)} document(s) from {file_path.name}")
             
-            # Chunk all documents
             all_chunks = []
             for doc in documents:
                 chunks = self._chunk_document(doc, file_path)
@@ -169,12 +128,7 @@ class FileChunker:
             return []
     
     def parse_folder(self) -> Dict[str, List[Dict[str, str]]]:
-        """
-        Parse all supported files in the data folder.
         
-        Returns:
-            Dictionary mapping filenames to their parsed documents
-        """
         results = {}
         
         if not self.data_folder.exists():
@@ -183,7 +137,6 @@ class FileChunker:
         
         logger.info(f"Scanning data folder: {self.data_folder}")
         
-        # Get all files in the folder
         files = [f for f in self.data_folder.iterdir() if f.is_file()]
         
         if not files:
@@ -192,7 +145,6 @@ class FileChunker:
         
         logger.info(f"Found {len(files)} file(s) in data folder")
         
-        # Parse each file
         for file_path in files:
             if self._is_supported_file(file_path):
                 documents = self.parse_file(file_path)
@@ -206,7 +158,6 @@ class FileChunker:
 
 
 def main():
-    """Main function to run the chunker."""
     chunker = FileChunker(data_folder="datafolder")
     results = chunker.parse_folder()
     print(results)
