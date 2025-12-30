@@ -3,3 +3,5 @@ datafolder/
 indexer/utils/__pycache__/
 agent/utils/__pycache__/
 agent/.env
+agent/__pycache__
+indexer/.env

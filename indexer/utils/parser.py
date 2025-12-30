@@ -9,9 +9,13 @@ from urllib.parse import urlparse
 import PyPDF2
 from docx import Document
 from PIL import Image
-import pytesseract
 import requests
 from bs4 import BeautifulSoup
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class BaseParser(ABC):
@@ -129,10 +133,12 @@ class DocxParser(BaseParser):
 
 class ImageOCRParser(BaseParser):
 
-    def __init__(self, tesseract_cmd: Optional[str] = None):
+    def __init__(self):
         super().__init__()
-        if tesseract_cmd:
-            pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+        api_key = os.getenv("GEMINI_API")
+        if not api_key:
+            raise ValueError("GEMINI_API not found in environment variables")
+        self.client = genai.Client(api_key=api_key)
 
     def parse(self, source: str) -> List[Dict[str, str]]:
         if not os.path.exists(source):
@@ -140,14 +146,40 @@ class ImageOCRParser(BaseParser):
 
         try:
             image = Image.open(source)
+            image_format = image.format or "PNG"
 
-            content = pytesseract.image_to_string(image)
+            with open(source, "rb") as f:
+                image_bytes = f.read()
+
+            mime_type = f"image/{image_format.lower()}"
+            if image_format.upper() == "JPG":
+                mime_type = "image/jpeg"
+
+            prompt = """Analyze this image and provide a detailed transcription of all text and UI elements.
+
+This image is likely a UI screenshot. Please:
+1. Extract ALL visible text exactly as shown
+2. Identify and describe key UI elements (buttons, input fields, menus, icons, labels, headers)
+3. Note the layout and positioning of elements (e.g., "top navigation bar", "sidebar menu", "main content area")
+4. Describe any visual indicators (colors, highlights, selected states, error messages)
+5. Capture any data shown in tables, lists, or cards
+
+Format your response as a structured description that preserves the semantic meaning and organization of the UI."""
+
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Part.from_text(text=prompt),
+                    types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                ]
+            )
+            content = response.text
 
             metadata = {
                 "source": source,
                 "type": "image_ocr",
                 "filename": os.path.basename(source),
-                "image_format": image.format,
+                "image_format": image_format,
                 "image_size": f"{image.width}x{image.height}"
             }
 
